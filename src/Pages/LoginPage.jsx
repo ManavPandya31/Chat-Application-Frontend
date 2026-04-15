@@ -1,6 +1,7 @@
 import React from "react";
 import { useState } from "react";
-import axios from "axios";
+// import axios from "axios";
+import API from "../api/axios";
 import { Link , useNavigate } from "react-router-dom";
 
 export default function LoginPage() {
@@ -12,7 +13,7 @@ export default function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post("http://localhost:3131/api/auth/loginUser",form);
+      const res = await API.post("/api/auth/loginUser",form);
       console.log("Response From Login Api :- ",res);
       
       localStorage.setItem("user", JSON.stringify(res.data.data.user));
