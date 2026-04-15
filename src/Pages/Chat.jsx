@@ -5,6 +5,7 @@ import "../Styles/chat.css";
 import { socket } from "../socket";
 
 export default function Chat() {
+
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [message, setMessage] = useState("");
@@ -20,12 +21,11 @@ export default function Chat() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const res = await API.get("/api/auth/getAllUsers", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const res = await API.get("/api/auth/getAllUsers", {headers: {Authorization: `Bearer ${token}`,},});
+        console.log("Response From GetAllUsers Api :-",res);
+        
         setUsers(res.data.data);
+
       } catch (error) {
         console.log("Error fetching users:", error);
       }
@@ -90,14 +90,14 @@ export default function Chat() {
       if (!selectedUser) return;
 
       try {
-        const res = await API.get(
-          `/api/messages/getMessages/${currentUser._id}/${selectedUser._id}`,
+        const res = await API.get(`/api/messages/getMessages/${currentUser._id}/${selectedUser._id}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
             },
           },
         );
+        console.log("Response From Get Messages Api :-",res);
 
         const formatted = res.data.data.map((msg) => ({
           _id: msg._id,
@@ -107,6 +107,7 @@ export default function Chat() {
         }));
 
         setMessages(formatted);
+        
       } catch (error) {
         console.log("Error fetching messages:", error);
       }
