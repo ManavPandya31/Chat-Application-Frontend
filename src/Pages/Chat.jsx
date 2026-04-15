@@ -1,30 +1,30 @@
 import React from "react";
-import { useEffect, useState } from "react";
-import axios from "axios";
+import { useEffect, useState, useRef } from "react";
+import API from "../api/axios";
 import "../Styles/chat.css";
 import { socket } from "../socket";
 
 export default function Chat() {
-
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
+  const [onlineUsers, setOnlineUsers] = useState([]);
+  const [typing, setTyping] = useState(false);
+
+  const selectedUserRef = useRef(null);
+
   const token = localStorage.getItem("token");
   const currentUser = JSON.parse(localStorage.getItem("user"));
 
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const res = await axios.get("http://localhost:3131/api/auth/getAllUsers",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        console.log("Response From GetAllusers Api :-",res);
-      
+        const res = await API.get("/api/auth/getAllUsers", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
         setUsers(res.data.data);
       } catch (error) {
         console.log("Error fetching users:", error);
@@ -35,6 +35,10 @@ export default function Chat() {
   }, []);
 
   useEffect(() => {
+    selectedUserRef.current = selectedUser;
+  }, [selectedUser]);
+
+  useEffect(() => {
     if (currentUser?._id) {
       socket.emit("userOnline", currentUser._id);
     }
@@ -43,33 +47,63 @@ export default function Chat() {
       setMessages((prev) => [
         ...prev,
         {
+          _id: msg._id,
           text: msg.text,
           type: msg.sender === currentUser._id ? "sent" : "received",
         },
       ]);
     });
 
+    socket.on("getOnlineUsers", (users) => {
+      setOnlineUsers(users);
+    });
+
+    socket.on("typing", ({ sender }) => {
+      if (sender === selectedUserRef.current?._id) {
+        setTyping(true);
+
+        clearTimeout(window.typingTimer);
+        window.typingTimer = setTimeout(() => {
+          setTyping(false);
+        }, 1000);
+      }
+    });
+
+    socket.on("messageSeen", ({ messageId }) => {
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg._id === messageId ? { ...msg, seen: true } : msg,
+        ),
+      );
+    });
+
     return () => {
       socket.off("receiveMessage");
+      socket.off("getOnlineUsers");
+      socket.off("typing");
+      socket.off("messageSeen");
     };
   }, []);
-  
+
   useEffect(() => {
     const fetchMessages = async () => {
       if (!selectedUser) return;
 
       try {
-        const res = await axios.get(`http://localhost:3131/api/messages/getMessages/${currentUser._id}/${selectedUser._id}`,
+        const res = await API.get(
+          `/api/messages/getMessages/${currentUser._id}/${selectedUser._id}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
             },
-          }
+          },
         );
 
         const formatted = res.data.data.map((msg) => ({
+          _id: msg._id,
           text: msg.text,
           type: msg.sender === currentUser._id ? "sent" : "received",
+          seen: msg.seen,
         }));
 
         setMessages(formatted);
@@ -88,6 +122,11 @@ export default function Chat() {
     }
   }, [selectedUser]);
 
+  useEffect(() => {
+    const el = document.querySelector(".messages");
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages]);
+
   const sendMessage = () => {
     if (!message || !selectedUser) return;
 
@@ -100,9 +139,19 @@ export default function Chat() {
     setMessage("");
   };
 
+  const handleTyping = (e) => {
+    setMessage(e.target.value);
+
+    if (selectedUser) {
+      socket.emit("typing", {
+        sender: currentUser._id,
+        receiver: selectedUser._id,
+      });
+    }
+  };
+
   return (
     <div className="chat-container">
-      {/* Sidebar */}
       <div className="sidebar">
         <div className="sidebar-header">Chats</div>
 
@@ -114,21 +163,26 @@ export default function Chat() {
               onClick={() => setSelectedUser(user)}
             >
               {user.Name}
+              {onlineUsers.includes(user._id) && (
+                <span className="online-dot"></span>
+              )}
             </div>
           ))}
         </div>
       </div>
 
-      {/* Chat Area */}
       <div className="chat-box">
         <div className="chat-header">
           {selectedUser ? selectedUser.Name : "Select User"}
         </div>
 
+        {typing && <p style={{ padding: "10px" }}>Typing...</p>}
+
         <div className="messages">
-          {messages.map((msg, i) => (
-            <div key={i} className={`message ${msg.type}`}>
+          {messages.map((msg) => (
+            <div key={msg._id} className={`message ${msg.type}`}>
               {msg.text}
+              {msg.type === "sent" && <span> {msg.seen ? "✔✔" : "✔"}</span>}
             </div>
           ))}
         </div>
@@ -136,7 +190,7 @@ export default function Chat() {
         <div className="chat-input">
           <input
             value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            onChange={handleTyping}
             placeholder="Type a message..."
           />
           <button onClick={sendMessage}>➤</button>

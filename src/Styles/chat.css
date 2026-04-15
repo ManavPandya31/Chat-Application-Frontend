@@ -111,7 +111,15 @@ body {
   background: #0b7a6f;
 }
 
-/* Animation */
+.online-dot {
+  height: 10px;
+  width: 10px;
+  background: green;
+  border-radius: 50%;
+  display: inline-block;
+  margin-left: 10px;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;

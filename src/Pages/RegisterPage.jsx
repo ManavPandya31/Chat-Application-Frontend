@@ -1,6 +1,7 @@
 import React from 'react';
 import { useState } from 'react';
-import axios from "axios";
+// import axios from "axios";
+import API from "../api/axios";
 import { Link , useNavigate } from "react-router-dom";
 
 export default function RegisterPage() {
@@ -11,9 +12,12 @@ export default function RegisterPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("http://localhost:3131/api/auth/registerUser", form);
+      const res = await API.post("/api/auth/registerUser", form);
+      console.log("Response From Register Api :- ",res);
+      
       alert("Registered Successfully");
       navigate("/");
+      
     } catch (err) {
       alert(err.response?.data?.message || "Error");
     }
