@@ -2,21 +2,12 @@ import React from "react";
 import { useEffect, useRef, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import API from "../api/axios";
-import "../Styles/chat.css";
-import {
-  setUsers,
-  setSelectedUser,
-  setMessages,
-  addMessage,
-  setOnlineUsers,
-  setTyping,
-  updateMessageSeen,
-  incrementUnread,
-  clearUnread,
-} from "../Redux/slices/chatSlice";
+import {setUsers,setSelectedUser,setUnreadCounts,setMessages,addMessage,setOnlineUsers,setTyping,updateMessageSeen,incrementUnread,clearUnread,} from "../Redux/slices/chatSlice";
 import { socket } from "../socket";
+import "../Styles/chat.css";
 
 export default function Chat() {
+
   const [message, setMessage] = useState("");
 
   const dispatch = useDispatch();
@@ -31,12 +22,11 @@ export default function Chat() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const res = await API.get("/api/auth/getAllUsers", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        console.log("Response From GetAllUsers Api :- ", res);
-
+        const res = await API.get("/api/auth/getAllUsers", {headers: { Authorization: `Bearer ${token}` },});
+        console.log("Response From GetAllUsers Api :-",res);
+        
         dispatch(setUsers(res.data.data));
+
       } catch (error) {
         console.log("Error fetching users:", error);
       }
@@ -50,22 +40,26 @@ export default function Chat() {
   }, [selectedUser]);
 
   useEffect(() => {
-    if (currentUser?._id) {
-      socket.emit("userOnline", currentUser._id);
-    }
-
     socket.on("receiveMessage", (msg) => {
+      const senderId = msg.sender?._id ? msg.sender._id.toString(): msg.sender.toString();
+
       dispatch(
         addMessage({
           _id: msg._id,
           text: msg.text,
-          type: msg.sender === currentUser._id ? "sent" : "received",
-        })
+          type: senderId === currentUser._id ? "sent" : "received",
+          seen: msg.seen || false,
+        }),
       );
 
-      if (msg.sender !== currentUser._id) {
-        if (selectedUserRef.current?._id !== msg.sender) {
-          dispatch(incrementUnread(msg.sender));
+      if (senderId !== currentUser._id) {
+        if (selectedUserRef.current?._id !== senderId) {
+          dispatch(incrementUnread(senderId));
+        } else {
+          socket.emit("markSeen", {
+            messageId: msg._id,
+            senderId: senderId,
+          });
         }
       }
     });
@@ -75,7 +69,7 @@ export default function Chat() {
     });
 
     socket.on("typing", ({ sender }) => {
-      if (sender === selectedUserRef.current?._id) {
+      if (sender.toString() === selectedUserRef.current?._id) {
         dispatch(setTyping(true));
 
         clearTimeout(window.typingTimer);
@@ -102,24 +96,47 @@ export default function Chat() {
       if (!selectedUser) return;
 
       try {
-        const res = await API.get(
-          `/api/messages/getMessages/${currentUser._id}/${selectedUser._id}`,
+        const res = await API.get(`/api/messages/getMessages/${currentUser._id}/${selectedUser._id}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
             },
-          }
+          },
         );
-        console.log("Response From GetMessages Api :- ", res);
+        console.log("Response From Getmessages Api :-",res);
 
-        const formatted = res.data.data.map((msg) => ({
-          _id: msg._id,
-          text: msg.text,
-          type: msg.sender === currentUser._id ? "sent" : "received",
-          seen: msg.seen,
-        }));
+        const formatted = res.data.data.map((msg) => {
+          const senderId = msg.sender?._id
+            ? msg.sender._id.toString()
+            : msg.sender.toString();
+
+          return {
+            _id: msg._id,
+            text: msg.text,
+            type: senderId === currentUser._id ? "sent" : "received",
+            seen: msg.seen,
+          };
+        });
 
         dispatch(setMessages(formatted));
+
+        const response = await API.post("/api/messages/markSeen",
+          {
+            senderId: selectedUser._id,
+            receiverId: currentUser._id,
+          },
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
+        console.log("Response From MarkSeen Api :-",response);
+
+        formatted.forEach((msg) => {
+          if (msg.type === "received") {
+            dispatch(updateMessageSeen(msg._id));
+          }
+        });
+
       } catch (error) {
         console.log("Error fetching messages:", error);
       }
@@ -129,7 +146,6 @@ export default function Chat() {
 
     if (selectedUser) {
       socket.emit("joinChat", {
-        userId: currentUser._id,
         receiverId: selectedUser._id,
       });
     }
@@ -140,11 +156,30 @@ export default function Chat() {
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages]);
 
+  useEffect(() => {
+    const fetchUnreadCounts = async () => {
+      try {
+        const res = await API.get(`/api/messages/unread/${currentUser._id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        console.log("Response From Unread Message Api :-",res);
+
+        dispatch(setUnreadCounts(res.data.data));
+        
+      } catch (error) {
+        console.log("Error fetching unread counts:", error);
+      }
+    };
+
+    if (currentUser?._id) {
+      fetchUnreadCounts();
+    }
+  }, []);
+
   const sendMessage = () => {
     if (!message || !selectedUser) return;
 
     socket.emit("sendMessage", {
-      sender: currentUser._id,
       receiver: selectedUser._id,
       text: message,
     });
@@ -157,7 +192,6 @@ export default function Chat() {
 
     if (selectedUser) {
       socket.emit("typing", {
-        sender: currentUser._id,
         receiver: selectedUser._id,
       });
     }
@@ -183,9 +217,7 @@ export default function Chat() {
                 <span className="online-dot"></span>
               )}
               {unreadCounts?.[user._id] > 0 && (
-                <span className="unread-badge">
-                  {unreadCounts[user._id]}
-                </span>
+                <span className="unread-badge">{unreadCounts[user._id]}</span>
               )}
             </div>
           ))}
@@ -208,7 +240,11 @@ export default function Chat() {
                 <div key={msg._id} className={`message ${msg.type}`}>
                   {msg.text}
                   {msg.type === "sent" && (
-                    <span> {msg.seen ? "✔✔" : "✔"}</span>
+                    <span
+                      className={msg.seen ? "double-tick seen" : "single-tick"}
+                    >
+                      {msg.seen ? "✔✔" : "✔"}
+                    </span>
                   )}
                 </div>
               ))}
@@ -218,6 +254,7 @@ export default function Chat() {
               <input
                 value={message}
                 onChange={handleTyping}
+                onKeyDown={(e) => e.key === "Enter" && sendMessage()}
                 placeholder="Type a message..."
               />
               <button onClick={sendMessage}>➤</button>

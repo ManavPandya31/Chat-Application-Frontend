@@ -129,6 +129,20 @@ body {
   margin-left: 10px;
 }
 
+.single-tick {
+  color: gray;
+  margin-left: 5px;
+}
+
+.double-tick {
+  margin-left: 5px;
+}
+
+.double-tick.seen {
+  color: #0ea5e9;
+  font-weight: bold;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
