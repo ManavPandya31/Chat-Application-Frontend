@@ -19,7 +19,7 @@ export default function LoginPage() {
       localStorage.setItem("user", JSON.stringify(res.data.data.user));
       localStorage.setItem("token", res.data.data.accessToken);
 
-      alert("Login Success");
+      //alert("Login Success");
 
       navigate("/chat");
 

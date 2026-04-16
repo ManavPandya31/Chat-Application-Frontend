@@ -15,7 +15,7 @@ export default function RegisterPage() {
       const res = await API.post("/api/auth/registerUser", form);
       console.log("Response From Register Api :- ",res);
       
-      alert("Registered Successfully");
+      //alert("Registered Successfully");
       navigate("/");
       
     } catch (err) {
