@@ -46,6 +46,10 @@ const chatSlice = createSlice({
             }
             state.unreadCounts[senderId] += 1;
         },
+        
+        setUnreadCounts : (state , action) => {
+           state.unreadCounts = action.payload 
+        },
 
         clearUnread : (state , action) =>{
             const userId = action.payload  
@@ -61,5 +65,5 @@ const chatSlice = createSlice({
     }
 });
 
-export const  { setUsers , setSelectedUser , setMessages , addMessage , setOnlineUsers , setTyping , updateMessageSeen,incrementUnread,clearUnread} = chatSlice.actions;
+export const  { setUsers , setSelectedUser , setMessages , addMessage , setOnlineUsers , setTyping , updateMessageSeen,incrementUnread,clearUnread,setUnreadCounts} = chatSlice.actions;
 export default chatSlice.reducer;
