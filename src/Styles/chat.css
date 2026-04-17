@@ -27,6 +27,9 @@ body {
   background: #075e54;
   color: white;
   font-size: 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .user-list {
@@ -35,14 +38,35 @@ body {
 }
 
 .user {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: 12px;
   border-bottom: 1px solid #eee;
   cursor: pointer;
   transition: 0.3s;
 }
 
-.user:hover {
+.user:hover, .user.active {
   background: #f5f5f5;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.user-name {
+  font-size: 14px;
+  font-weight: 500;
 }
 
 .chat-box {
@@ -55,45 +79,92 @@ body {
   padding: 15px;
   background: #075e54;
   color: white;
+  font-weight: 600;
 }
 
 .messages {
   flex: 1;
-  padding: 15px;
+  padding: 20px;
   overflow-y: auto;
-  background: url("https://www.transparenttextures.com/patterns/cubes.png");
+  background-color: #e5ddd5; 
+  background-image: url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png");
+  display: flex;
+  flex-direction: column;
+  gap: 8px; 
+}
+
+.message-wrapper {
+  display: flex;
+  width: 100%;
+  margin-bottom: 2px;
+}
+
+.message-wrapper.sent {
+  justify-content: flex-end;
+}
+
+.message-wrapper.received {
+  justify-content: flex-start;
 }
 
 .message {
-  max-width: 60%;
-  padding: 10px 15px;
-  margin: 8px 0;
-  border-radius: 10px;
-  animation: fadeIn 0.3s ease-in-out;
+  max-width: 65%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  position: relative;
+  font-size: 14.5px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 1px 0.5px rgba(0,0,0,0.13);
+  word-wrap: break-word;
 }
 
-.sent {
-  background: #dcf8c6;
-  align-self: flex-end;
+.message.sent {
+  background: #dcf8c6 !important;
+  border-top-right-radius: 0;
 }
 
-.received {
-  background: white;
-  align-self: flex-start;
+.message.received {
+  background: #ffffff !important;
+  border-top-left-radius: 0;
+}
+
+.message-info {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.time {
+  font-size: 10px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.tick {
+  font-size: 12px;
+  color: gray;
+}
+
+.tick.seen {
+  color: #34b7f1;
 }
 
 .chat-input {
   display: flex;
-  padding: 10px;
+  padding: 10px 15px;
   background: #f0f0f0;
+  align-items: center;
 }
 
 .chat-input input {
   flex: 1;
-  padding: 10px;
-  border-radius: 20px;
+  padding: 12px 20px;
+  border-radius: 25px;
   border: none;
   outline: none;
+  background: white;
 }
 
 .chat-input button {
@@ -114,42 +185,46 @@ body {
 .online-dot {
   height: 10px;
   width: 10px;
-  background: green;
+  background: #4ade80;
   border-radius: 50%;
   display: inline-block;
   margin-left: 10px;
+  border: 1px solid white;
 }
 
 .unread-badge {
-  background: red;
+  background: #25d366;
   color: white;
   border-radius: 50%;
-  padding: 4px 8px;
-  font-size: 12px;
+  padding: 2px 7px;
+  font-size: 11px;
   margin-left: 10px;
-}
-
-.single-tick {
-  color: gray;
-  margin-left: 5px;
-}
-
-.double-tick {
-  margin-left: 5px;
-}
-
-.double-tick.seen {
-  color: #0ea5e9;
   font-weight: bold;
 }
 
+.no-chat {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #f8f9fa;
+  color: #777;
+}
+
+.typing-indicator {
+  font-style: italic;
+  font-size: 12px;
+  color: #075e54;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 4px 10px;
+  border-radius: 10px;
+}
+
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.message-wrapper {
+  animation: fadeIn 0.2s ease-in-out;
 }
