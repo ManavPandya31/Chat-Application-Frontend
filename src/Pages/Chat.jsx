@@ -4,11 +4,16 @@ import { useSelector, useDispatch } from "react-redux";
 import API from "../api/axios";
 import {setUsers,setSelectedUser,setUnreadCounts,setMessages,addMessage,setOnlineUsers,setTyping,updateMessageSeen,incrementUnread,clearUnread,} from "../Redux/slices/chatSlice";
 import { socket } from "../socket";
+import { updateUser } from "../Redux/slices/userSlice";
 import "../Styles/chat.css";
 
 export default function Chat() {
 
   const [message, setMessage] = useState("");
+  const [profileForm, setProfileForm] = useState({Name: "",Mobile: "",bio: "",});
+  const [file, setFile] = useState(null);
+  const [editMode, setEditMode] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
 
   const dispatch = useDispatch();
 
@@ -16,15 +21,16 @@ export default function Chat() {
     useSelector((state) => state.chat);
 
   const selectedUserRef = useRef(null);
+  const messagesRef = useRef([]);
   const token = localStorage.getItem("token");
-  const currentUser = JSON.parse(localStorage.getItem("user"));
+  const currentUser = useSelector((state) => state.user.user);
 
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         const res = await API.get("/api/auth/getAllUsers", {headers: { Authorization: `Bearer ${token}` },});
-        console.log("Response From GetAllUsers Api :-",res);
-        
+        console.log("Response From GetAllUsers Api :-", res);
+
         dispatch(setUsers(res.data.data));
 
       } catch (error) {
@@ -40,25 +46,37 @@ export default function Chat() {
   }, [selectedUser]);
 
   useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
+  useEffect(() => {
+
     socket.on("receiveMessage", (msg) => {
-      const senderId = msg.sender?._id ? msg.sender._id.toString(): msg.sender.toString();
+      const msgSenderId = msg.sender?._id
+        ? msg.sender._id.toString()
+        : msg.sender.toString();
+      const currentId = currentUser?._id?.toString();
 
-      dispatch(
-        addMessage({
-          _id: msg._id,
-          text: msg.text,
-          type: senderId === currentUser._id ? "sent" : "received",
-          seen: msg.seen || false,
-        }),
-      );
+      const alreadyExists = messagesRef.current.some((m) => m._id === msg._id);
 
-      if (senderId !== currentUser._id) {
-        if (selectedUserRef.current?._id !== senderId) {
-          dispatch(incrementUnread(senderId));
+      if (!alreadyExists) {
+        dispatch(
+          addMessage({
+            ...msg,
+            type: msgSenderId === currentId ? "sent" : "received",
+          }),
+        );
+      }
+
+      if (msgSenderId !== currentId) {
+        if (selectedUserRef.current?._id !== msgSenderId) {
+
+          dispatch(incrementUnread(msgSenderId));
+          
         } else {
           socket.emit("markSeen", {
             messageId: msg._id,
-            senderId: senderId,
+            senderId: msgSenderId,
           });
         }
       }
@@ -75,7 +93,7 @@ export default function Chat() {
         clearTimeout(window.typingTimer);
         window.typingTimer = setTimeout(() => {
           dispatch(setTyping(false));
-        }, 1000);
+        }, 2000);
       }
     });
 
@@ -89,11 +107,13 @@ export default function Chat() {
       socket.off("typing");
       socket.off("messageSeen");
     };
-  }, []);
+  }, [currentUser]);
 
   useEffect(() => {
+
     const fetchMessages = async () => {
-      if (!selectedUser) return;
+
+      if (!selectedUser || !currentUser?._id) return;
 
       try {
         const res = await API.get(`/api/messages/getMessages/${currentUser._id}/${selectedUser._id}`,
@@ -103,7 +123,7 @@ export default function Chat() {
             },
           },
         );
-        console.log("Response From Getmessages Api :-",res);
+        console.log("Response From Getmessages Api :-", res);
 
         const formatted = res.data.data.map((msg) => {
           const senderId = msg.sender?._id
@@ -113,7 +133,10 @@ export default function Chat() {
           return {
             _id: msg._id,
             text: msg.text,
-            type: senderId === currentUser._id ? "sent" : "received",
+            type:
+              msg.sender.toString() === currentUser?._id?.toString()
+                ? "sent"
+                : "received",
             seen: msg.seen,
           };
         });
@@ -129,7 +152,7 @@ export default function Chat() {
             headers: { Authorization: `Bearer ${token}` },
           },
         );
-        console.log("Response From MarkSeen Api :-",response);
+        console.log("Response From MarkSeen Api :-", response);
 
         formatted.forEach((msg) => {
           if (msg.type === "received") {
@@ -149,7 +172,7 @@ export default function Chat() {
         receiverId: selectedUser._id,
       });
     }
-  }, [selectedUser]);
+  }, [selectedUser, currentUser]);
 
   useEffect(() => {
     const el = document.querySelector(".messages");
@@ -162,10 +185,10 @@ export default function Chat() {
         const res = await API.get(`/api/messages/unread/${currentUser._id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        console.log("Response From Unread Message Api :-",res);
+        console.log("Response From Unread Message Api :-", res);
 
         dispatch(setUnreadCounts(res.data.data));
-        
+
       } catch (error) {
         console.log("Error fetching unread counts:", error);
       }
@@ -174,9 +197,10 @@ export default function Chat() {
     if (currentUser?._id) {
       fetchUnreadCounts();
     }
-  }, []);
+  }, [currentUser]);
 
   const sendMessage = () => {
+
     if (!message || !selectedUser) return;
 
     socket.emit("sendMessage", {
@@ -188,6 +212,7 @@ export default function Chat() {
   };
 
   const handleTyping = (e) => {
+
     setMessage(e.target.value);
 
     if (selectedUser) {
@@ -197,25 +222,75 @@ export default function Chat() {
     }
   };
 
+  const handleUpdateProfile = async () => {
+
+    try {
+      const formData = new FormData();
+
+      formData.append("Name", profileForm.Name);
+      formData.append("Mobile", profileForm.Mobile);
+      formData.append("bio", profileForm.bio);
+
+      if (file) {
+        formData.append("profilePic", file);
+      }
+
+      const res = await API.put("/api/user/updateProfile", formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      console.log("Updated:", res);
+
+      dispatch(updateUser(res.data.data));
+
+      dispatch(
+        setUsers(
+          users.map((u) => (u._id === res.data.data._id ? res.data.data : u)),
+        ),
+      );
+
+      localStorage.setItem("user", JSON.stringify(res.data.data));
+
+      setEditMode(false);
+      setShowProfile(false);
+
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
   return (
     <div className="chat-container">
       <div className="sidebar">
-        <div className="sidebar-header">Chats</div>
+        <div className="sidebar-header">
+          Chats
+          <button onClick={() => setShowProfile(true)}>Profile</button>
+        </div>
 
         <div className="user-list">
           {users.map((user) => (
             <div
               key={user._id}
-              className="user"
+              className={`user ${selectedUser?._id === user._id ? "active" : ""}`}
               onClick={() => {
                 dispatch(setSelectedUser(user));
                 dispatch(clearUnread(user._id));
               }}
             >
-              {user.Name}
+              <div className="user-info">
+                <img
+                  src={user.profilePicture}
+                  alt="profile"
+                  className="avatar"
+                />
+                <span className="user-name">{user.Name}</span>
+              </div>
+
               {onlineUsers.includes(user._id) && (
                 <span className="online-dot"></span>
               )}
+
               {unreadCounts?.[user._id] > 0 && (
                 <span className="unread-badge">{unreadCounts[user._id]}</span>
               )}
@@ -233,21 +308,41 @@ export default function Chat() {
           <>
             <div className="chat-header">{selectedUser.Name}</div>
 
-            {typing && <p style={{ padding: "10px" }}>Typing...</p>}
-
             <div className="messages">
-              {messages.map((msg) => (
-                <div key={msg._id} className={`message ${msg.type}`}>
-                  {msg.text}
-                  {msg.type === "sent" && (
-                    <span
-                      className={msg.seen ? "double-tick seen" : "single-tick"}
-                    >
-                      {msg.seen ? "✔✔" : "✔"}
-                    </span>
-                  )}
-                </div>
-              ))}
+              {messages.map((msg) => {
+                const rawSenderId = msg.sender?._id || msg.sender;
+                const msgSenderId = rawSenderId ? rawSenderId.toString() : "";
+                const currentUserId = currentUser?._id?.toString();
+
+                const isSent = msgSenderId === currentUserId;
+                const displayType = isSent ? "sent" : "received";
+
+                return (
+                  <div
+                    key={msg._id}
+                    className={`message-wrapper ${displayType}`}
+                  >
+                    <div className={`message ${displayType}`}>
+                      <span className="text">{msg.text}</span>
+                      <div className="message-info">
+                        <span className="time">
+                          {msg.createdAt
+                            ? new Date(msg.createdAt).toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })
+                            : ""}
+                        </span>
+                        {displayType === "sent" && (
+                          <span className={msg.seen ? "tick seen" : "tick"}>
+                            {msg.seen ? "✔✔" : "✔"}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             <div className="chat-input">
