@@ -2,29 +2,15 @@ import React from "react";
 import { useEffect, useRef, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import API from "../api/axios";
-import {
-  setUsers,
-  setSelectedUser,
-  setUnreadCounts,
-  setMessages,
-  addMessage,
-  setOnlineUsers,
-  setTyping,
-  updateMessageSeen,
-  incrementUnread,
-  clearUnread,
-} from "../Redux/slices/chatSlice";
+import {setUsers,setSelectedUser,setUnreadCounts,setMessages,addMessage,setOnlineUsers,setTyping,updateMessageSeen,incrementUnread,clearUnread,} from "../Redux/slices/chatSlice";
 import { socket } from "../socket";
 import { updateUser } from "../Redux/slices/userSlice";
 import "../Styles/chat.css";
 
 export default function Chat() {
+
   const [message, setMessage] = useState("");
-  const [profileForm, setProfileForm] = useState({
-    Name: "",
-    Mobile: "",
-    bio: "",
-  });
+  const [profileForm, setProfileForm] = useState({Name: "",Mobile: "",bio: "",});
   const [file, setFile] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
@@ -44,12 +30,11 @@ export default function Chat() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const res = await API.get("/api/auth/getAllUsers", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await API.get("/api/auth/getAllUsers", {headers: { Authorization: `Bearer ${token}` },});
         console.log("Response From GetAllUsers Api :-", res);
 
         dispatch(setUsers(res.data.data));
+
       } catch (error) {
         console.log("Error fetching users:", error);
       }
@@ -135,8 +120,7 @@ export default function Chat() {
       if (!selectedUser || !currentUser?._id) return;
 
       try {
-        const res = await API.get(
-          `/api/messages/getMessages/${currentUser._id}/${selectedUser._id}`,
+        const res = await API.get(`/api/messages/getMessages/${currentUser._id}/${selectedUser._id}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -165,8 +149,7 @@ export default function Chat() {
 
         dispatch(setMessages(formatted));
 
-        const response = await API.post(
-          "/api/messages/markSeen",
+        const response = await API.post("/api/messages/markSeen",
           {
             senderId: selectedUser._id,
             receiverId: currentUser._id,
@@ -182,6 +165,7 @@ export default function Chat() {
             dispatch(updateMessageSeen(msg._id));
           }
         });
+
       } catch (error) {
         console.log("Error fetching messages:", error);
       }
@@ -210,6 +194,7 @@ export default function Chat() {
         console.log("Response From Unread Message Api :-", res);
 
         dispatch(setUnreadCounts(res.data.data));
+
       } catch (error) {
         console.log("Error fetching unread counts:", error);
       }
@@ -237,6 +222,7 @@ export default function Chat() {
   }, [users]);
 
   const sendMessage = () => {
+
     if (!message || !selectedUser) return;
 
     socket.emit("sendMessage", {
@@ -248,6 +234,7 @@ export default function Chat() {
   };
 
   const handleTyping = (e) => {
+
     setMessage(e.target.value);
 
     if (!selectedUser) return;
@@ -258,6 +245,7 @@ export default function Chat() {
   };
 
   const handleUpdateProfile = async () => {
+
     try {
       const formData = new FormData();
 
@@ -288,13 +276,14 @@ export default function Chat() {
 
       setEditMode(false);
       setShowProfile(false);
+
     } catch (err) {
       console.log(err);
     }
   };
 
-  console.log("selectedUser:", selectedUser);
-  console.log("currentUser:", currentUser);
+  // console.log("selectedUser:", selectedUser);
+  // console.log("currentUser:", currentUser);
 
   return (
     <div className="chat-container">
