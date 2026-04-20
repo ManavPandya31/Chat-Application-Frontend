@@ -7,6 +7,9 @@ import { socket } from "../socket";
 import { updateUser } from "../Redux/slices/userSlice";
 import "../Styles/chat.css";
 
+//useRef Is Important In Socket Because Socket Runs Outside React Lifecycle So It Needs
+//latest Values Without Re-render.
+
 export default function Chat() {
 
   const [message, setMessage] = useState("");
@@ -43,10 +46,12 @@ export default function Chat() {
     fetchUsers();
   }, []);
 
+  //Always Keep Latest Selected User..
   useEffect(() => {
     selectedUserRef.current = selectedUser;
   }, [selectedUser]);
 
+  //Always Keep Latest Messages..
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
@@ -75,9 +80,12 @@ export default function Chat() {
         );
       }
 
+      //For unreed Message...
       if (msgSenderId !== currentId) {
         if (selectedUserRef.current?._id !== msgSenderId) {
+
           dispatch(incrementUnread(msgSenderId));
+
         } else {
           socket.emit("markSeen", {
             messageId: msg._id,
@@ -99,7 +107,7 @@ export default function Chat() {
 
         typingTimeoutRef.current = setTimeout(() => {
           dispatch(setTyping(false));
-        }, 1500);
+        }, 2000);
       }
     });
 
@@ -180,6 +188,7 @@ export default function Chat() {
     }
   }, [selectedUser, currentUser]);
 
+  //Auto-Scrollinggg...
   useEffect(() => {
     const el = document.querySelector(".messages");
     if (el) el.scrollTop = el.scrollHeight;
