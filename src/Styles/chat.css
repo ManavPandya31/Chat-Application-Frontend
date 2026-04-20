@@ -120,13 +120,27 @@ body {
 }
 
 .message.sent {
-  background: #dcf8c6 !important;
+  background: white;
+  color: #111;
   border-top-right-radius: 0;
 }
 
 .message.received {
-  background: #ffffff !important;
+  background: #ffffff;
+  color: #222;
   border-top-left-radius: 0;
+}
+
+.message.sent .time {
+  color: rgba(0, 0, 0, 0.5);
+}
+
+.message.received .time {
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.text {
+  line-height: 1.4;
 }
 
 .message-info {

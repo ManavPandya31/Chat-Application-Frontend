@@ -29,24 +29,43 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="auth-container">
-      <h2>Login</h2>
+  <div className="auth-wrapper">
+    <div className="auth-card">
 
-      <form onSubmit={handleSubmit}>
-        <input placeholder="Email"
-          onChange={(e)=>setForm({...form, Email:e.target.value})}
-        />
+      <div className="auth-header">
+        <h2>Welcome Back 👋</h2>
+        <p>Login to continue chatting</p>
+      </div>
 
-        <input type="password" placeholder="Password"
-          onChange={(e)=>setForm({...form, password:e.target.value})}
-        />
+      <form onSubmit={handleSubmit} className="auth-form">
 
-        <button type="submit">Login</button>
+        <div className="input-group">
+          <input
+            placeholder="Email Address"
+            onChange={(e)=>setForm({...form, Email:e.target.value})}
+          />
+        </div>
+
+        <div className="input-group">
+          <input
+            type="password"
+            placeholder="Password"
+            onChange={(e)=>setForm({...form, password:e.target.value})}
+          />
+        </div>
+
+        <button type="submit" className="auth-btn">
+          Login
+        </button>
+
       </form>
 
-      <div className="auth-link">
-        <Link to="/register">Create account</Link>
+      <div className="auth-footer">
+        <p>Don't have an account?</p>
+        <Link to="/register">Create Account</Link>
       </div>
+
     </div>
-  );
+  </div>
+);
 }

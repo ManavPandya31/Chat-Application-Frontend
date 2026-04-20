@@ -4,6 +4,7 @@ import API from "../api/axios";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { setUser } from "../Redux/slices/userSlice";
+import "../Styles/Auth.css";
 
 export default function RegisterPage() {
 
@@ -43,55 +44,83 @@ export default function RegisterPage() {
     }
   };
 
-  return (
-    <div className="auth-container">
-      <h2>Register</h2>
+ return (
+  <div className="auth-wrapper">
+    <div className="auth-card">
 
-      <form onSubmit={handleSubmit}>
+      <div className="auth-header">
+        <h2>Create Account</h2>
+        <p>Join and start chatting instantly</p>
+      </div>
 
-        <input
-          placeholder="Name"
-          onChange={(e) => setForm({ ...form, Name: e.target.value })}
-        />
+      <form onSubmit={handleSubmit} className="auth-form">
 
-        <input
-          placeholder="Mobile"
-          onChange={(e) => setForm({ ...form, Mobile: e.target.value })}
-        />
+        <div className="input-group">
+          <input
+            placeholder="Full Name"
+            onChange={(e) => setForm({ ...form, Name: e.target.value })}
+          />
+        </div>
 
-        <select onChange={(e) => setForm({ ...form, Gender: e.target.value })}>
-          <option value="">Select Gender</option>
-          <option value="Male">Male</option>
-          <option value="Female">Female</option>
-        </select>
+        <div className="input-group">
+          <input
+            placeholder="Mobile Number"
+            onChange={(e) => setForm({ ...form, Mobile: e.target.value })}
+          />
+        </div>
 
-        <input
-          placeholder="Email"
-          onChange={(e) => setForm({ ...form, Email: e.target.value })}
-        />
+        <div className="input-group">
+          <select
+            onChange={(e) => setForm({ ...form, Gender: e.target.value })}
+          >
+            <option value="">Select Gender</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+          </select>
+        </div>
 
-        <input
-          type="password"
-          placeholder="Password"
-          onChange={(e) => setForm({ ...form, password: e.target.value })}
-        />
+        <div className="input-group">
+          <input
+            placeholder="Email Address"
+            onChange={(e) => setForm({ ...form, Email: e.target.value })}
+          />
+        </div>
 
-        <input
-          placeholder="Bio"
-          onChange={(e) => setForm({ ...form, bio: e.target.value })}
-        />
-        
-        <input
-          type="file"
-          onChange={(e) => setFile(e.target.files[0])}
-        />
+        <div className="input-group">
+          <input
+            type="password"
+            placeholder="Password"
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
+          />
+        </div>
 
-        <button type="submit">Register</button>
+        <div className="input-group">
+          <input
+            placeholder="Bio"
+            onChange={(e) => setForm({ ...form, bio: e.target.value })}
+          />
+        </div>
+
+        <div className="file-upload">
+          <label>Upload Profile Picture</label>
+          <input
+            type="file"
+            onChange={(e) => setFile(e.target.files[0])}
+          />
+        </div>
+
+        <button type="submit" className="auth-btn">
+          Register
+        </button>
+
       </form>
 
-      <div className="auth-link">
-        <Link to="/">Already have account?</Link>
+      <div className="auth-footer">
+        <p>Already have an account?</p>
+        <Link to="/">Login</Link>
       </div>
+
     </div>
-  );
+  </div>
+);
 }
