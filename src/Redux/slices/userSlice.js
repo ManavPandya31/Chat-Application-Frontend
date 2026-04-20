@@ -1,7 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
-  user: null,
+    user: JSON.parse(localStorage.getItem("user")) || null,
 };  
 
 const userSlice = createSlice({
@@ -12,10 +12,12 @@ const userSlice = createSlice({
             state.user = action.payload;
         },
         updateUser: (state, action) => {
-            state.user = { ...state.user, ...action.payload };
+             state.user = { ...(state.user || {}), ...action.payload };
         },
         logoutUser: (state) => {
             state.user = null;
+            localStorage.removeItem("user");
+            localStorage.removeItem("token");
         }
     }
 });
