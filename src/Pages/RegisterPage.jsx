@@ -4,7 +4,7 @@ import API from "../api/axios";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { setUser } from "../Redux/slices/userSlice";
-import "../Styles/Auth.css";
+// import "../Styles/Auth.css";
 
 export default function RegisterPage() {
 
