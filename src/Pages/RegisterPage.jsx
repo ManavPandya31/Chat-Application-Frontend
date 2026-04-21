@@ -37,7 +37,7 @@ export default function RegisterPage() {
       localStorage.setItem("user", JSON.stringify(user));
       localStorage.setItem("token", accessToken);
 
-      navigate("/chat");
+      navigate("/");
 
     } catch (err) {
       alert(err.response?.data?.message || "Error");
