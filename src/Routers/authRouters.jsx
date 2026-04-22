@@ -9,7 +9,7 @@ import Profile from "../Pages/Profile";
 export default function AuthRouters(){
 
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/">
       <Routes>
         <Route path="/" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
